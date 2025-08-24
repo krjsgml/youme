@@ -125,7 +125,7 @@ class Youme(QMainWindow):
         self.bluetooth_thread.send_data('e')
         print("emergency!")
 
-        self.db.record_emergency("kimgunhee")
+        self.db.record_emergency(self.user)
 
         self.tracking_thread.stop()
         QTimer.singleShot(0, self.cam_label.clear)

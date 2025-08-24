@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QThread, pyqtSignal
 import cv2
+from ultralytics import YOLO
 from Bluetooth import get_bluetooth
 
 class Tracking(QThread):
@@ -12,6 +13,7 @@ class Tracking(QThread):
         super().__init__()
         self.bluetooth_thread = get_bluetooth()
         self.fall_detect_thread = Falldetect()
+        self.helmet_detect_thread = HelmetDetect()
 
         self.cam_flg = 0
         self.running = False
@@ -27,7 +29,9 @@ class Tracking(QThread):
         self.stop_track = 0
         self.prev_pos = None
 
+        self.helmet_frame_count = 0
 
+ 
     def run(self):
         self.running = True
         self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
@@ -37,8 +41,11 @@ class Tracking(QThread):
             ret, self.frame = self.cap.read()
             if not ret or self.frame is None:
                 continue  # 프레임 못받았으면 다음 루프
+
             fall_detect_frame = self.frame.copy()
+            helmet_detect_frame = self.frame.copy()
             self.frame = cv2.flip(self.frame, 1)
+
             if ret:
                 if self.frame is not None:
                     self.handle_tracking_result(self.frame)
@@ -54,6 +61,14 @@ class Tracking(QThread):
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                     else:
                         success, box = self.tracker.update(self.frame)
+
+                        if not self.helmet_detect_thread.isRunning():
+                            self.helmet_detect_thread.start()
+                            
+                        self.helmet_frame_count += 1
+                        if self.helmet_frame_count % 5 == 0:
+                            self.helmet_detect_thread.update_frame(helmet_detect_frame)
+
                         if success:
                             x, y, w, h = [int(v) for v in box]
                             cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -72,7 +87,6 @@ class Tracking(QThread):
                                 pos = 'r'
                             else:
                                 pos = 'c'
-                            
                             
                             if pos!=self.prev_pos:
                                 self.bluetooth_thread.send_data(pos)
@@ -178,7 +192,7 @@ class Falldetect(QThread):
                 rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                 results = self.pose.process(rgb)
                 self.handle_fall_result(results)
-            #self.msleep(1000)
+            self.msleep(1000)
 
 
     def stop(self):
@@ -204,13 +218,41 @@ class Falldetect(QThread):
 
             if vertical_diff < 0.05:
                 self.emergency+=1
-                print("emergency detect")
                 if self.emergency>=5:
-                    print("응급상황 5초 이상 이상감지")
-
+                    print("emergency detect")
                     self.emergency_signal.emit(True)
                     self.emergency=0
             
             else:
                 self.emergency = 0
-                    
+
+
+class HelmetDetect(QThread):
+    helmet_signal = pyqtSignal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.running = False
+        self.model = YOLO("hemletYoloV8_100epochs.pt")
+        self.helmet_detected = False
+        self.frame = None
+
+    def update_frame(self, frame):
+        self.frame = frame
+
+    def run(self):
+        self.running = True
+        while self.running:
+            if self.frame is not None:
+                results = self.model(self.frame, stream=True)
+                for r in results:
+                    for box in r.boxes:
+                        cls_id = int(box.cls[0])
+                        label = self.model.names[cls_id].lower()
+                        conf = float(box.conf[0])
+
+                        if "helmet" in label and conf >= 0.8:
+                            self.helmet_detected = True
+                        else:
+                            cv2.putText(self.frame, "헬멧을 착용해주세요", (10,30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 4, (0,0,255), 10)
