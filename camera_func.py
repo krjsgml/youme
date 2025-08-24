@@ -94,6 +94,7 @@ class Tracking(QThread):
                                     self.prev_pos = pos
                                 
                             else:
+                                print("tracking failed!!")
                                 cv2.putText(self.frame, "Tracking failure", (10, 60),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                                 self.bluetooth_thread.send_data('s')
