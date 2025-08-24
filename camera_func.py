@@ -103,11 +103,10 @@ class Tracking(QThread):
                                     print("dc motor stop")
                                     self.emergency_state = True
                                     self.helmet_detect_thread.emergency_state = self.emergency_state
-                                    self.current_index = 1
 
                                     self.switch_camera(1)
                                     self.fall_detect_thread.update_frame(fall_detect_frame)
-                                    cv2.putText(self.frame, "Please wear a helmet.", (10, 60),
+                                    cv2.putText(self.frame, "emergency situation!", (10, 60),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
                     else:
@@ -223,7 +222,7 @@ class Falldetect(QThread):
                 results = self.pose.process(rgb)
                 print(results.pose_landmarks is not None)
                 self.handle_fall_result(results)
-            self.msleep(10)
+            self.msleep(1000)
 
 
     def stop(self):
