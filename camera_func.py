@@ -53,8 +53,8 @@ class Tracking(QThread):
                     if not self.helmet_detect_thread.isRunning():
                         self.helmet_detect_thread.start()
                     self.helmet_frame_count += 1
-                    #if self.helmet_frame_count % 5 == 0:
-                    self.helmet_detect_thread.update_frame(helmet_detect_frame)
+                    if self.helmet_frame_count % 5 == 0:
+                        self.helmet_detect_thread.update_frame(helmet_detect_frame)
 
                     # 헬멧인식
                     if self.helmet_detect_thread.helmet_detected == True:
