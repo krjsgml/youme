@@ -22,6 +22,8 @@ class Tracking(QThread):
         self.cascade = cv2.CascadeClassifier("/home/jsh/youme/haarcascade/haarcascade_frontalface_default.xml")
         #self.cascade = cv2.CascadeClassifier("C:/youme/youme/src/kimgunhee/haarcascade/haarcascade_frontalface_default.xml")
         self.tracker = cv2.TrackerKCF_create()
+        self.stop_track = 0
+        self.prev_pos = None
 
 
     def run(self):
@@ -51,6 +53,7 @@ class Tracking(QThread):
                     else:
                         success, box = self.tracker.update(self.frame)
                         if success:
+                            self.stop_track = 0
                             x, y, w, h = [int(v) for v in box]
                             cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                             cv2.putText(self.frame, "Tracking...", (x, y - 10),
@@ -68,25 +71,33 @@ class Tracking(QThread):
                                 pos = 'r'
                             else:
                                 pos = 'c'
-
-                            self.bluetooth_thread.send_data(pos)
-
+                            
+                            
+                            if pos!=self.prev_pos:
+                                self.bluetooth_thread.send_data(pos)
+                                self.prev_pos = pos
+                                
                         else:
                             cv2.putText(self.frame, "Tracking failure", (10, 60),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                            self.bluetooth_thread.send_data('0')
-                            print("dc motor stop")
-                            self.stop()
+                            self.bluetooth_thread.send_data('s')
+                            self.stop_track += 1
+                            if self.stop_track ==50:
+                                self.bluetooth_thread.send_data('0')
+                                print("dc motor stop")
+                                self.stop()
+
                         self.fall_detect_thread.update_frame(fall_detect_frame)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
 
-            self.msleep(100)
+            #self.msleep(10)
 
 
     def stop(self):
         self.running = False
         self.tracking = False
+        self.prev_pos = None
         self.fall_detect_thread.stop()
         self.cap.release()
 
@@ -164,7 +175,7 @@ class Falldetect(QThread):
                 rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                 results = self.pose.process(rgb)
                 self.handle_fall_result(results)
-            self.msleep(1000)
+            #self.msleep(1000)
 
 
     def stop(self):
