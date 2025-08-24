@@ -49,7 +49,7 @@ class Tracking(QThread):
             if ret:
                 if self.frame is not None:
                     self.handle_tracking_result(self.frame)
-                    
+
                     if not self.helmet_detect_thread.isRunning():
                         self.helmet_detect_thread.start()
                     self.helmet_frame_count += 1
@@ -115,6 +115,8 @@ class Tracking(QThread):
                         self.tracking = False
                         self.tracker = cv2.TrackerKCF_create()
                         self.detects = [] 
+                        cv2.putText(self.frame, "Please wear a helmet.", (10, 60),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
 
