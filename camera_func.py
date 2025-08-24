@@ -77,7 +77,6 @@ class Tracking(QThread):
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
                                 face_center = x+w//2
-                                frame_center = self.frame.shape[1]//2
 
                                 left_bound = self.frame.shape[1] // 3
                                 right_bound = 2*self.frame.shape[1] // 3
@@ -98,7 +97,7 @@ class Tracking(QThread):
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                                 self.bluetooth_thread.send_data('s')
                                 self.stop_track += 1
-                                if self.stop_track ==50:
+                                if self.stop_track ==100:
                                     print("dc motor stop")
                                     self.cap.release()
                                     self.current_index = 1
