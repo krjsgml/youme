@@ -49,10 +49,14 @@ class Tracking(QThread):
             if ret:
                 if self.frame is not None:
                     self.handle_tracking_result(self.frame)
+                    
+                    if not self.helmet_detect_thread.isRunning():
+                        self.helmet_detect_thread.start()
                     self.helmet_frame_count += 1
-                    if self.helmet_frame_count % 5 == 0:
-                        self.helmet_detect_thread.update_frame(helmet_detect_frame)
+                    #if self.helmet_frame_count % 5 == 0:
+                    self.helmet_detect_thread.update_frame(helmet_detect_frame)
 
+                    # 헬멧인식
                     if self.helmet_detect_thread.helmet_detected == True:
                         # 얼굴 인식 및 트래킹 로직
                         if not self.tracking:
@@ -67,8 +71,7 @@ class Tracking(QThread):
                         else:
                             success, box = self.tracker.update(self.frame)
 
-                            if not self.helmet_detect_thread.isRunning():
-                                self.helmet_detect_thread.start()
+                            
                                 
                             if success:   
                                 x, y, w, h = [int(v) for v in box]
