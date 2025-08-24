@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 
 # YOLO 모델 로드
-model = YOLO("C:/Users/82109/Desktop/helmet/helmet-detection-yolov8/models/hemletYoloV8_100epochs.pt")
+model = YOLO("hemletYoloV8_100epochs.pt")
 
 # 웹캠 열기
 cap = cv2.VideoCapture(0)
