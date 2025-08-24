@@ -68,43 +68,47 @@ class Tracking(QThread):
                         self.helmet_frame_count += 1
                         if self.helmet_frame_count % 5 == 0:
                             self.helmet_detect_thread.update_frame(helmet_detect_frame)
+                        
+                        if self.helmet_detect_thread.helmet_detected == True:
+                            if success:
+                                x, y, w, h = [int(v) for v in box]
+                                cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                                cv2.putText(self.frame, "Tracking...", (x, y - 10),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-                        if success:
-                            x, y, w, h = [int(v) for v in box]
-                            cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                            cv2.putText(self.frame, "Tracking...", (x, y - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                            
-                            face_center = x+w//2
-                            frame_center = self.frame.shape[1]//2
+                                face_center = x+w//2
+                                frame_center = self.frame.shape[1]//2
 
-                            left_bound = self.frame.shape[1] // 3
-                            right_bound = 2*self.frame.shape[1] // 3
+                                left_bound = self.frame.shape[1] // 3
+                                right_bound = 2*self.frame.shape[1] // 3
 
-                            if face_center < left_bound:
-                                pos = 'l'
-                            elif face_center > right_bound:
-                                pos = 'r'
-                            else:
-                                pos = 'c'
-                            
-                            if pos!=self.prev_pos:
-                                self.bluetooth_thread.send_data(pos)
-                                self.prev_pos = pos
+                                if face_center < left_bound:
+                                    pos = 'l'
+                                elif face_center > right_bound:
+                                    pos = 'r'
+                                else:
+                                    pos = 'c'
+
+                                if pos!=self.prev_pos:
+                                    self.bluetooth_thread.send_data(pos)
+                                    self.prev_pos = pos
                                 
+                            else:
+                                cv2.putText(self.frame, "Tracking failure", (10, 60),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                                self.bluetooth_thread.send_data('s')
+                                self.stop_track += 1
+                                if self.stop_track ==50:
+                                    print("dc motor stop")
+                                    self.cap.release()
+                                    self.current_index = 1
+                                    self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
+                                    if not self.fall_detect_thread.isRunning():
+                                        self.fall_detect_thread.start()
+                                    self.fall_detect_thread.update_frame(fall_detect_frame)
                         else:
-                            cv2.putText(self.frame, "Tracking failure", (10, 60),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                            self.bluetooth_thread.send_data('s')
-                            self.stop_track += 1
-                            if self.stop_track ==50:
-                                print("dc motor stop")
-                                self.cap.release()
-                                self.current_index = 1
-                                self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
-                                if not self.fall_detect_thread.isRunning():
-                                    self.fall_detect_thread.start()
-                                self.fall_detect_thread.update_frame(fall_detect_frame)
+                             cv2.putText(self.frame, "헬멧을 착용해주세요", (10,30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 4, (0,0,255), 10)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
 
@@ -253,6 +257,3 @@ class HelmetDetect(QThread):
 
                         if "helmet" in label and conf >= 0.8:
                             self.helmet_detected = True
-                        else:
-                            cv2.putText(self.frame, "헬멧을 착용해주세요", (10,30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 4, (0,0,255), 10)

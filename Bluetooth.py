@@ -31,9 +31,6 @@ class Bluetooth(QThread):
     def run(self):
         while self._running:
             try:
-                print("\n\n\n")
-                print("bluetooth init")
-                print("\n\n\n")
                 self.sock = BluetoothSocket(RFCOMM)
                 self.sock.connect((self.mac_address, self.port))
                 print("블루투스 연결 성공")

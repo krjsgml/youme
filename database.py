@@ -214,7 +214,11 @@ class DB:
         
         
     def __del__(self):
-        # 객체 삭제 시 DB 연결 닫기
-        self.cur.close()
-        self.conn.close()
-        print("DB connection closed.")
+        # 객체 삭제 시 DB 연결 닫기    
+        try:
+            if hasattr(self, 'conn') and self.conn:
+                self.cur.close()
+                self.conn.close()
+                print("DB connection closed.")
+        except Exception as e:
+            print("DB close ignored:", e)

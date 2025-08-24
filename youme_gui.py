@@ -11,6 +11,9 @@ from database import DB
 from bluetooth import *
 import threading
 from flask_server.app import app
+import os
+os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/usr/lib/qt5/plugins/platforms"
+
 
 class Youme(QMainWindow):
     def __init__(self):
