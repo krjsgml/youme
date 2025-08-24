@@ -90,7 +90,7 @@ class Tracking(QThread):
                                 self.current_index = 1
                                 self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
 
-                        self.fall_detect_thread.update_frame(fall_detect_frame)
+                                self.fall_detect_thread.update_frame(fall_detect_frame)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
 
