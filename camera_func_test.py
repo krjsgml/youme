@@ -19,10 +19,8 @@ class Tracking(QThread):
         self.tracking = False
         self.detects = []
 
-        self.cam_indices=[0, 2]
-        self.current_index = 0
-
         self.cascade = cv2.CascadeClassifier("/home/jsh/youme/haarcascade/haarcascade_frontalface_default.xml")
+        #self.cascade = cv2.CascadeClassifier("C:/youme/youme/src/kimgunhee/haarcascade/haarcascade_frontalface_default.xml")
         self.tracker = cv2.TrackerKCF_create()
         self.stop_track = 0
         self.prev_pos = None
@@ -30,7 +28,7 @@ class Tracking(QThread):
 
     def run(self):
         self.running = True
-        self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
+        self.cap = cv2.VideoCapture(0)
         self.cap.set(3, 640)  # 카메라 영상의 가로 길이를 640으로 설정
         self.cap.set(4, 400)  # 카메라 영상의 세로 길이를 400으로 설정
         while self.running:
@@ -85,10 +83,9 @@ class Tracking(QThread):
                             self.bluetooth_thread.send_data('s')
                             self.stop_track += 1
                             if self.stop_track ==50:
+                                self.bluetooth_thread.send_data('0')
                                 print("dc motor stop")
-                                self.cap.release()
-                                self.current_index = 1
-                                self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
+                                self.stop()
 
                         self.fall_detect_thread.update_frame(fall_detect_frame)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
@@ -103,7 +100,6 @@ class Tracking(QThread):
         self.prev_pos = None
         self.fall_detect_thread.stop()
         self.cap.release()
-        self.current_index=0
 
         self.tracker = cv2.TrackerKCF_create()
         self.detects = []
@@ -111,7 +107,6 @@ class Tracking(QThread):
 
 
     def closeEvent(self, event):
-        self.current_index=0
         self.stop()
         # 종료 시 카메라 해제
         self.cap.release()
