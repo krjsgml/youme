@@ -69,10 +69,7 @@ class Tracking(QThread):
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                             
                         else:
-                            success, box = self.tracker.update(self.frame)
-
-                            
-                                
+                            success, box = self.tracker.update(self.frame)                    
                             if success:   
                                 x, y, w, h = [int(v) for v in box]
                                 cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -265,3 +262,5 @@ class HelmetDetect(QThread):
 
                         if "helmet" in label and conf >= 0.8:
                             self.helmet_detected = True
+                        else:
+                            self.helmet_detected = False
