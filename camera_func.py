@@ -55,7 +55,6 @@ class Tracking(QThread):
                     else:
                         success, box = self.tracker.update(self.frame)
                         if success:
-                            self.stop_track = 0
                             x, y, w, h = [int(v) for v in box]
                             cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                             cv2.putText(self.frame, "Tracking...", (x, y - 10),
@@ -89,7 +88,8 @@ class Tracking(QThread):
                                 self.cap.release()
                                 self.current_index = 1
                                 self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
-
+                                if not self.fall_detect_thread.isRunning():
+                                    self.fall_detect_thread.start()
                                 self.fall_detect_thread.update_frame(fall_detect_frame)
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
@@ -104,6 +104,7 @@ class Tracking(QThread):
         self.fall_detect_thread.stop()
         self.cap.release()
         self.current_index=0
+        self.stop_track = 0
 
         self.tracker = cv2.TrackerKCF_create()
         self.detects = []
@@ -133,9 +134,6 @@ class Tracking(QThread):
             self.tracker.init(self.frame, roi)
 
         self.tracking = True
-
-        if not self.fall_detect_thread.isRunning():
-            self.fall_detect_thread.start()
 
 
     def select_roi(self, event):
