@@ -106,6 +106,8 @@ class Tracking(QThread):
 
                                     self.switch_camera(1)
                                     self.fall_detect_thread.update_frame(fall_detect_frame)
+                                    cv2.putText(self.frame, "Please wear a helmet.", (10, 60),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
                     else:
                         self.bluetooth_thread.send_data('s')
@@ -190,8 +192,8 @@ class Tracking(QThread):
         if self.cap.isOpened():
             self.cap.release()
         self.cap = cv2.VideoCapture(self.cam_indices[index])
-        self.cap.set(3, 640)
-        self.cap.set(4, 480)
+        self.cap.set(3, 1280)
+        self.cap.set(4, 720)
         self.current_index = index
 
 
@@ -233,10 +235,9 @@ class Falldetect(QThread):
 
 
     def handle_fall_result(self, results):
-        print("detect falling person")
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
-
+            print("pose lanmarks detected")
             #left_wrist = landmarks[mp.solutions.pose.PoseLandmark.LEFT_WRIST]
             #right_wrist = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_WRIST]
             left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
@@ -255,6 +256,8 @@ class Falldetect(QThread):
             
             else:
                 self.emergency = 0
+        else:
+            print("no landmarks")
 
 
 class HelmetDetect(QThread):
