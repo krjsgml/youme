@@ -49,28 +49,28 @@ class Tracking(QThread):
             if ret:
                 if self.frame is not None:
                     self.handle_tracking_result(self.frame)
+                    self.helmet_frame_count += 1
+                    if self.helmet_frame_count % 5 == 0:
+                        self.helmet_detect_thread.update_frame(helmet_detect_frame)
 
-                    # 얼굴 인식 및 트래킹 로직
-                    if not self.tracking:
-                        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-                        self.detects = self.cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-
-                        for (x, y, w, h) in self.detects:
-                            cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                        cv2.putText(self.frame, "Click a box to track", (10, 30),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                    else:
-                        success, box = self.tracker.update(self.frame)
-
-                        if not self.helmet_detect_thread.isRunning():
-                            self.helmet_detect_thread.start()
+                    if self.helmet_detect_thread.helmet_detected == True:
+                        # 얼굴 인식 및 트래킹 로직
+                        if not self.tracking:
+                            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+                            self.detects = self.cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+    
+                            for (x, y, w, h) in self.detects:
+                                cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                            cv2.putText(self.frame, "Click a box to track", (10, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                             
-                        self.helmet_frame_count += 1
-                        if self.helmet_frame_count % 5 == 0:
-                            self.helmet_detect_thread.update_frame(helmet_detect_frame)
-                        
-                        if self.helmet_detect_thread.helmet_detected == True:
-                            if success:
+                        else:
+                            success, box = self.tracker.update(self.frame)
+
+                            if not self.helmet_detect_thread.isRunning():
+                                self.helmet_detect_thread.start()
+                                
+                            if success:   
                                 x, y, w, h = [int(v) for v in box]
                                 cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                                 cv2.putText(self.frame, "Tracking...", (x, y - 10),
@@ -106,9 +106,12 @@ class Tracking(QThread):
                                     if not self.fall_detect_thread.isRunning():
                                         self.fall_detect_thread.start()
                                     self.fall_detect_thread.update_frame(fall_detect_frame)
-                        else:
-                             cv2.putText(self.frame, "헬멧을 착용해주세요", (10,30),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 4, (0,0,255), 10)
+
+                    else:
+                        self.bluetooth_thread.send_data('s')
+                        self.tracking = False
+                        self.tracker = cv2.TrackerKCF_create()
+                        self.detects = [] 
                     # 프레임을 QPixmap으로 변환하여 시그널 발행
                     self.handle_tracking_result(self.frame)
 
