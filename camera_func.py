@@ -21,7 +21,7 @@ class Tracking(QThread):
         self.tracking = False
         self.detects = []
 
-        self.cam_indices=[0, 2]
+        self.cam_indices=[2, 0]
         self.current_index = 0
 
         self.cascade = cv2.CascadeClassifier("/home/jsh/youme/haarcascade/haarcascade_frontalface_default.xml")
@@ -30,7 +30,7 @@ class Tracking(QThread):
         self.prev_pos = None
 
         self.helmet_frame_count = 0
-
+        self.emergency_state = False
  
     def run(self):
         self.running = True
@@ -78,6 +78,7 @@ class Tracking(QThread):
 
                                 face_center = x+w//2
 
+
                                 left_bound = self.frame.shape[1] // 3
                                 right_bound = 2*self.frame.shape[1] // 3
 
@@ -99,11 +100,11 @@ class Tracking(QThread):
                                 self.stop_track += 1
                                 if self.stop_track ==100:
                                     print("dc motor stop")
-                                    self.cap.release()
+                                    self.emergency_state = True
+                                    self.helmet_detect_thread.emergency_state = self.emergency_state
                                     self.current_index = 1
-                                    self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
-                                    if not self.fall_detect_thread.isRunning():
-                                        self.fall_detect_thread.start()
+
+                                    self.switch_camera(1)
                                     self.fall_detect_thread.update_frame(fall_detect_frame)
 
                     else:
@@ -127,6 +128,7 @@ class Tracking(QThread):
         self.cap.release()
         self.current_index=0
         self.stop_track = 0
+        self.emergency_state = False
 
         self.tracker = cv2.TrackerKCF_create()
         self.detects = []
@@ -182,13 +184,30 @@ class Tracking(QThread):
                     break
 
 
+    def switch_camera(self, index):
+        if self.current_index == index:
+            return  # 이미 해당 카메라라면 실행 안 함
+        if self.cap.isOpened():
+            self.cap.release()
+        self.cap = cv2.VideoCapture(self.cam_indices[index])
+        self.cap.set(3, 640)
+        self.cap.set(4, 480)
+        self.current_index = index
+
+
 class Falldetect(QThread):
     emergency_signal = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
         self.running = False
-        self.pose = mp.solutions.pose.Pose()
+        self.pose = mp.solutions.pose.Pose(
+            static_image_mode=False,
+            model_complexity=1,
+            enable_segmentation=False,
+            min_detection_confidence=0.3,   # 감지 기준 낮춤
+            min_tracking_confidence=0.3
+        )
         self.frame = None
         self.emergency = 0
 
@@ -199,8 +218,9 @@ class Falldetect(QThread):
             if self.frame is not None:
                 rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                 results = self.pose.process(rgb)
+                print(results.pose_landmarks is not None)
                 self.handle_fall_result(results)
-            self.msleep(1000)
+            self.msleep(10)
 
 
     def stop(self):
@@ -213,6 +233,7 @@ class Falldetect(QThread):
 
 
     def handle_fall_result(self, results):
+        print("detect falling person")
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
 
@@ -223,9 +244,10 @@ class Falldetect(QThread):
             left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
 
             vertical_diff = abs(left_shoulder.y - left_hip.y)
-
+            print(vertical_diff)
             if vertical_diff < 0.05:
                 self.emergency+=1
+                print(self.emergency)
                 if self.emergency>=5:
                     print("emergency detect")
                     self.emergency_signal.emit(True)
@@ -244,6 +266,7 @@ class HelmetDetect(QThread):
         self.model = YOLO("hemletYoloV8_100epochs.pt")
         self.helmet_detected = False
         self.frame = None
+        self.emergency_state = False
 
     def update_frame(self, frame):
         self.frame = frame
@@ -251,16 +274,17 @@ class HelmetDetect(QThread):
     def run(self):
         self.running = True
         while self.running:
-            if self.frame is not None:
-                results = self.model(self.frame, stream=True)
-                for r in results:
-                    for box in r.boxes:
-                        cls_id = int(box.cls[0])
-                        label = self.model.names[cls_id].lower()
-                        conf = float(box.conf[0])
+            if self.emergency_state == False:
+                if self.frame is not None:
+                    results = self.model(self.frame, stream=True)
+                    for r in results:
+                        for box in r.boxes:
+                            cls_id = int(box.cls[0])
+                            label = self.model.names[cls_id].lower()
+                            conf = float(box.conf[0])
 
-                        if "helmet" in label and conf >= 0.8:
-                            self.helmet_detected = True
-                        else:
-                            self.helmet_detected = False
-            self.msleep(1000)
+                            if "helmet" in label and conf >= 0.8:
+                                self.helmet_detected = True
+                            else:
+                                self.helmet_detected = False
+                self.msleep(1000)
