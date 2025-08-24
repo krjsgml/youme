@@ -264,3 +264,4 @@ class HelmetDetect(QThread):
                             self.helmet_detected = True
                         else:
                             self.helmet_detected = False
+            self.msleep(1000)
