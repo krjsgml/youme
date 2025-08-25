@@ -131,18 +131,19 @@ class Tracking(QThread):
                                     self.emergency_state = True
                                     self.helmet_detect_thread.emergency_state = self.emergency_state
 
-                                    self.switch_camera(1)
-                                    # fall detect에 최신 프레임 전달 (원코드 유지)
-                                    self.fall_detect_thread.update_frame(frame)
-                                    cv2.putText(frame, "emergency situation!", (10, 60),
-                                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-
                     else:
                         self.bluetooth_thread.send_data('s')
                         self.tracking = False
                         self.tracker = create_kcf_tracker()
                         self.detects = []
                         cv2.putText(frame, "Please wear a helmet.", (10, 60),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                        
+                    if self.emergency_state == True:
+                        self.switch_camera(1)
+                        # fall detect에 최신 프레임 전달 (원코드 유지)
+                        self.fall_detect_thread.update_frame(frame)
+                        cv2.putText(frame, "emergency situation!", (10, 60),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
                     # 프레임을 QPixmap으로 변환하여 시그널 발행 (원코드 위치 유지)
