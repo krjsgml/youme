@@ -44,6 +44,8 @@ class Tracking(QThread):
         self._frame_mutex = QMutex()
         self.cap = None
 
+        self.fall_detect_thread.frame_signal.connect(self.update_ui_from_fall)
+
     def run(self):
         self.running = True
         self.cap = cv2.VideoCapture(self.cam_indices[self.current_index])
@@ -152,6 +154,10 @@ class Tracking(QThread):
 
             self.msleep(10)  # CPU 점유율 완화
 
+    def update_ui_from_fall(self, qt_image):
+        # Falldetect에서 받은 frame을 그대로 UI로 emit
+        self.result_signal.emit(QPixmap.fromImage(qt_image))
+
     def stop(self):
         # (원코드 유지 + 보강)
         self.running = False
@@ -236,6 +242,7 @@ class Tracking(QThread):
 
 class Falldetect(QThread):
     emergency_signal = pyqtSignal(object)
+    frame_signal = pyqtSignal(QImage)  # UI로 Mediapipe 스켈레톤 표시용
 
     def __init__(self):
         super().__init__()
@@ -278,7 +285,10 @@ class Falldetect(QThread):
             # 낙상 판정
             self._check_fall(results)
 
-        return frame
+        h, w, ch = frame.shape
+        bytes_per_line = ch * w
+        qt_image = QImage(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.frame_signal.emit(qt_image)
 
     def _check_fall(self, results):
         """왼쪽 어깨와 엉덩이 y 좌표 차이로 낙상 감지"""
