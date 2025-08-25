@@ -180,6 +180,7 @@ class Tracking(QThread):
 
     def closeEvent(self, event):
         # (원코드 유지: 실제로 QThread에는 호출되지 않지만 요구사항대로 보존)
+        print("junseo babo mungchunge")
         self.current_index=0
         self.stop()
         # 종료 시 카메라 해제
