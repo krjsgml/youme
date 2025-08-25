@@ -134,6 +134,7 @@ class Tracking(QThread):
                                     self.switch_camera(1)
                                     # fall detect에 최신 프레임 전달 (원코드 유지)
                                     self.fall_detect_thread.update_frame(frame)
+                                    frame = self.fall_detect_thread.process(frame)
                                     cv2.putText(frame, "emergency situation!", (10, 60),
                                                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
@@ -142,8 +143,9 @@ class Tracking(QThread):
                         self.tracking = False
                         self.tracker = create_kcf_tracker()
                         self.detects = []
-                        cv2.putText(frame, "Please wear a helmet.", (10, 60),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+                        if self.emergency_state == False:
+                            cv2.putText(frame, "Please wear a helmet.", (10, 60),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
                     # 프레임을 QPixmap으로 변환하여 시그널 발행 (원코드 위치 유지)
                     self.handle_tracking_result(frame)
@@ -242,12 +244,11 @@ class Falldetect(QThread):
             static_image_mode=False,
             model_complexity=1,
             enable_segmentation=False,
-            min_detection_confidence=0.3,   # 감지 기준 낮춤
+            min_detection_confidence=0.3,
             min_tracking_confidence=0.3
         )
         self.frame = None
         self.emergency = 0
-
         self._frame_mutex = QMutex()
 
     def run(self):
@@ -257,12 +258,43 @@ class Falldetect(QThread):
             with QMutexLocker(self._frame_mutex):
                 if self.frame is not None:
                     local_frame = self.frame.copy()
+
             if local_frame is not None:
-                rgb = cv2.cvtColor(local_frame, cv2.COLOR_BGR2RGB)
-                results = self.pose.process(rgb)
-                # print(results.pose_landmarks is not None)  # 로그 과다 방지로 주석
-                self.handle_fall_result(results)
-            self.msleep(1000)  # 원코드 주기 유지
+                # process()를 활용
+                processed_frame = self.process(local_frame)
+                # 여기서 processed_frame을 Tracking에서 UI로 emit하면 됨
+            self.msleep(1000)
+
+    def process(self, frame):
+        """프레임에 pose를 그려주고 낙상 판정까지 수행"""
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(rgb)
+
+        if results.pose_landmarks:
+            # 스켈레톤 그리기
+            mp.solutions.drawing_utils.draw_landmarks(
+                frame, results.pose_landmarks, mp.solutions.pose.POSE_CONNECTIONS
+            )
+            # 낙상 판정
+            self._check_fall(results)
+
+        return frame
+
+    def _check_fall(self, results):
+        """왼쪽 어깨와 엉덩이 y 좌표 차이로 낙상 감지"""
+        landmarks = results.pose_landmarks.landmark
+        left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
+        left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
+
+        vertical_diff = abs(left_shoulder.y - left_hip.y)
+        if vertical_diff < 0.05:
+            self.emergency += 1
+            if self.emergency >= 5:
+                print("emergency detect")
+                self.emergency_signal.emit(True)
+                self.emergency = 0
+        else:
+            self.emergency = 0
 
     def stop(self):
         self.running = False
@@ -272,27 +304,6 @@ class Falldetect(QThread):
         with QMutexLocker(self._frame_mutex):
             self.frame = frame.copy()
 
-    def handle_fall_result(self, results):
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-            # print("pose landmarks detected")
-            left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
-            left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
-
-            vertical_diff = abs(left_shoulder.y - left_hip.y)
-            # print(vertical_diff)
-            if vertical_diff < 0.05:
-                self.emergency+=1
-                # print(self.emergency)
-                if self.emergency>=5:
-                    print("emergency detect")
-                    self.emergency_signal.emit(True)
-                    self.emergency=0
-            else:
-                self.emergency = 0
-        else:
-            # print("no landmarks")
-            pass
 
 
 class HelmetDetect(QThread):
