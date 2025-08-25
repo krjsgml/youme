@@ -126,7 +126,7 @@ class Tracking(QThread):
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                                 self.bluetooth_thread.send_data('s')
                                 self.stop_track += 1
-                                if self.stop_track == 100:
+                                if self.stop_track == 50:
                                     print("dc motor stop")
                                     self.emergency_state = True
                                     self.helmet_detect_thread.emergency_state = self.emergency_state
