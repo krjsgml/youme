@@ -192,8 +192,8 @@ class Tracking(QThread):
         if self.cap.isOpened():
             self.cap.release()
         self.cap = cv2.VideoCapture(self.cam_indices[index])
-        self.cap.set(3, 1280)
-        self.cap.set(4, 720)
+        self.cap.set(3, 640)
+        self.cap.set(4, 400)
         self.current_index = index
 
 
