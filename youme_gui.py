@@ -5,7 +5,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QEvent, QTimer, QSize
 import json, os
 from Bluetooth import get_bluetooth
-from camera_func import Tracking
+from camera_func_test import Tracking
 from Keyboard import SoftKeyboardDialog
 from database import DB
 from bluetooth import *
