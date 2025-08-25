@@ -36,7 +36,8 @@ class Tracking(QThread):
         self.tracker = create_kcf_tracker()
         self.stop_track = 0
         self.prev_pos = None
-
+        self.stop_dc_motor_flag = False
+        self.stop_dc_no_helmet_Flag = False
         self.helmet_frame_count = 0
         self.emergency_state = False
 
@@ -87,6 +88,8 @@ class Tracking(QThread):
                     # (원코드 흐름 유지) 트래킹 결과 처리
                     # 얼굴 검출/트래커 업데이트/블루투스 전송/상태표시
                     if self.helmet_detect_thread.helmet_detected == True:
+                        self.stop_dc_motor_flag = False
+                        self.stop_dc_no_helmet_Flag = False
                         # 얼굴 인식 및 트래킹 로직
                         if not self.tracking:
                             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -124,7 +127,9 @@ class Tracking(QThread):
                                 #print("tracking failed!!")
                                 cv2.putText(frame, "Tracking failure", (10, 60),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                                self.bluetooth_thread.send_data('s')
+                                if not self.stop_dc_motor_flag == False:
+                                    self.bluetooth_thread.send_data('s')
+                                    self.stop_dc_motor_flag = True
                                 self.stop_track += 1
                                 if self.stop_track == 50:
                                     print("dc motor stop")
@@ -132,7 +137,9 @@ class Tracking(QThread):
                                     self.helmet_detect_thread.emergency_state = self.emergency_state
 
                     else:
-                        self.bluetooth_thread.send_data('s')
+                        if self.stop_dc_no_helmet_Flag == False:
+                            self.bluetooth_thread.send_data('s')
+                            self.stop_dc_no_helmet_Flag = True
                         self.tracking = False
                         self.tracker = create_kcf_tracker()
                         self.detects = []
@@ -156,6 +163,7 @@ class Tracking(QThread):
         self.running = False
         self.tracking = False
         self.prev_pos = None
+        self.stop_dc_motor_flag = False
         self.fall_detect_thread.stop()
         if self.cap:
             self.cap.release()
