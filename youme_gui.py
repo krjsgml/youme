@@ -1,5 +1,6 @@
 import mediapipe as mp
 import sys
+import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QEvent, QTimer, QSize
@@ -75,6 +76,7 @@ class Youme(QMainWindow):
         self.map_btn = QPushButton("MAP")
         self.edit_item = QPushButton("Edit")
         self.close_btn = QPushButton("Close")
+        self.close_btn.setVisible(False)
 
         self.func_layout.addWidget(self.start_btn)
         self.func_layout.addWidget(self.stop_btn)
@@ -88,7 +90,7 @@ class Youme(QMainWindow):
         self.transfer_btn.clicked.connect(self.transfer)
         self.map_btn.clicked.connect(self.map)
         self.edit_item.clicked.connect(self.edit)
-        self.close_btn.clicked.connect(self.close)
+        self.close_btn.clicked.connect(self.close_event)
 
         self.stop_btn.setEnabled(False)
 
@@ -120,8 +122,9 @@ class Youme(QMainWindow):
         
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-
-        self.bluetooth_thread.send_data('0')
+        time.sleep(1)
+        if self.tracking_thread.emergency_state == False:
+            self.bluetooth_thread.send_data('0')
 
 
     def handle_emergency(self, signal):
@@ -132,9 +135,17 @@ class Youme(QMainWindow):
 
         self.tracking_thread.stop()
         QTimer.singleShot(0, self.cam_label.clear)
+        print("e s")
+        time.sleep(1)
+        print("e f")
+        self.start_btn.setVisible(False)
+        self.stop_btn.setVisible(False)
+        self.transfer_btn.setVisible(False)
+        self.map_btn.setVisible(False)
+        self.edit_item.setVisible(False)
+        self.close_btn.setVisible(True)
 
-        self.start_btn.setEnabled(True)
-        self.stop_btn.setEnabled(False)
+        self.cam_label.setText("EMERENCY!")
 
 
     def transfer(self):
@@ -385,7 +396,7 @@ class Youme(QMainWindow):
             item_remove = QLineEdit()
             item_remove.installEventFilter(self)
             self.item_remove = item_remove  # 참조 저장
-            item_remove.setPlaceholderText("추가할 품목명을 입력하세요")
+            item_remove.setPlaceholderText("삭제할 품목명을 입력하세요")
             self.line_edits.append(item_remove)
             self.dynamic_layout.addWidget(item_remove)
 
@@ -456,6 +467,11 @@ class Youme(QMainWindow):
             return
         self.wait_dialog = WaitForCardDialog()
         self.wait_dialog.exec_()
+
+    def close_event(self):
+        self.bluetooth_thread.send_data("a")
+        time.sleep(1)
+        self.close()
         
 
 class WaitForCardDialog(QDialog):

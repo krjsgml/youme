@@ -55,8 +55,7 @@ class Tracking(QThread):
         # 보조 스레드 안전 시작
         if not self.helmet_detect_thread.isRunning():
             self.helmet_detect_thread.start()
-        if not self.fall_detect_thread.isRunning():
-            self.fall_detect_thread.start()
+        
 
         while self.running:
             ret, raw = self.cap.read()
@@ -75,7 +74,6 @@ class Tracking(QThread):
             self.helmet_frame_count += 1
             if self.helmet_frame_count % 5 == 0:
                 self.helmet_detect_thread.update_frame(frame)
-
             # 비상상태일 때만 낙상 감지 프레임 공급(원래 로직 유지)
             if self.emergency_state:
                 self.fall_detect_thread.update_frame(frame)
@@ -132,6 +130,8 @@ class Tracking(QThread):
                                     self.stop_dc_motor_flag = True
                                 self.stop_track += 1
                                 if self.stop_track == 50:
+                                    if not self.fall_detect_thread.isRunning():
+                                        self.fall_detect_thread.start()
                                     print("dc motor stop")
                                     self.emergency_state = True
                                     self.helmet_detect_thread.emergency_state = self.emergency_state
@@ -170,6 +170,7 @@ class Tracking(QThread):
         self.current_index = 0
         self.stop_track = 0
         self.emergency_state = False
+        self.fall_detect_thread.emergency
 
         self.tracker = create_kcf_tracker()
         self.detects = []
@@ -177,6 +178,7 @@ class Tracking(QThread):
 
         # 보조 스레드도 안전 종료
         self.helmet_detect_thread.stop()
+        
 
     def closeEvent(self, event):
         # (원코드 유지: 실제로 QThread에는 호출되지 않지만 요구사항대로 보존)
@@ -247,6 +249,7 @@ class Falldetect(QThread):
 
     def __init__(self):
         super().__init__()
+        print("\n\n\nfall init\n\n\n")
         self.running = False
         self.pose = mp.solutions.pose.Pose(
             static_image_mode=False,
@@ -259,9 +262,14 @@ class Falldetect(QThread):
         self.emergency = 0
 
         self._frame_mutex = QMutex()
+        self.left_hip = None
+        self.left_shoulder = None
+
 
     def run(self):
         self.running = True
+        self.left_hip = None
+        self.left_shoulder = None
         while self.running:
             local_frame = None
             with QMutexLocker(self._frame_mutex):
@@ -286,10 +294,10 @@ class Falldetect(QThread):
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
             # print("pose landmarks detected")
-            left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
-            left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
-            print(left_hip.y, left_shoulder.y)
-            vertical_diff = abs(left_shoulder.y - left_hip.y)
+            self.left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
+            self.left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
+            print(self.left_hip.y, self.left_shoulder.y)
+            vertical_diff = abs(self.left_shoulder.y - self.left_hip.y)
             # print(vertical_diff)
             if vertical_diff < 0.05:
                 self.emergency+=1
@@ -310,6 +318,7 @@ class HelmetDetect(QThread):
 
     def __init__(self):
         super().__init__()
+        print("\n\n\nhelmet init\n\n\n")
         self.running = False
         # 파일명 오타 방지: hemlet -> helmet 로 교정(실제 파일명이 hemlet라면 원래대로 되돌리세요)
         try:
