@@ -484,6 +484,6 @@ class WaitForCardDialog(QDialog):
 if __name__ == '__main__':
     gui = QApplication(sys.argv)
     youme = Youme()   
-    youme.show()  
+    youme.showFullScreen()
     youme.show_wait_dialog()  
     sys.exit(gui.exec_())  
