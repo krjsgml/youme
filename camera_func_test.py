@@ -125,9 +125,9 @@ class Tracking(QThread):
                                 #print("tracking failed!!")
                                 cv2.putText(frame, "Tracking failure", (10, 60),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                                if not self.stop_dc_motor_flag == False:
-                                    self.bluetooth_thread.send_data('s')
-                                    self.stop_dc_motor_flag = True
+                                #if not self.stop_dc_motor_flag == False:
+                                self.bluetooth_thread.send_data('s')
+                                    #self.stop_dc_motor_flag = True
                                 self.stop_track += 1
                                 if self.stop_track == 50:
                                     if not self.fall_detect_thread.isRunning():
@@ -182,7 +182,6 @@ class Tracking(QThread):
 
     def closeEvent(self, event):
         # (원코드 유지: 실제로 QThread에는 호출되지 않지만 요구사항대로 보존)
-        print("junseo babo mungchunge")
         self.current_index=0
         self.stop()
         # 종료 시 카메라 해제
@@ -299,7 +298,7 @@ class Falldetect(QThread):
             print(self.left_hip.y, self.left_shoulder.y)
             vertical_diff = abs(self.left_shoulder.y - self.left_hip.y)
             # print(vertical_diff)
-            if vertical_diff < 0.05:
+            if vertical_diff < 0.2:
                 self.emergency+=1
                 # print(self.emergency)
                 if self.emergency>=5:
@@ -318,7 +317,7 @@ class HelmetDetect(QThread):
 
     def __init__(self):
         super().__init__()
-        print("\n\n\nhelmet init\n\n\n")
+        #print("\n\n\nhelmet init\n\n\n")
         self.running = False
         # 파일명 오타 방지: hemlet -> helmet 로 교정(실제 파일명이 hemlet라면 원래대로 되돌리세요)
         try:
@@ -357,7 +356,7 @@ class HelmetDetect(QThread):
                             if "helmet" in label and conf >= 0.8:
                                 detected = True
                     self.helmet_detected = detected
-            self.msleep(300)  # 1초에서 300ms로 반응성 개선
+            self.msleep(100)  # 1초에서 300ms로 반응성 개선
 
     def stop(self):
         self.running = False

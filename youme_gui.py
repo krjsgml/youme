@@ -100,8 +100,6 @@ class Youme(QMainWindow):
     def update_cam_label(self, pixmap):
         # 카메라 영상 업데이트 (UI에서 QImage를 QLabel로 표시)
         self.cam_label.setPixmap(pixmap)
-        if not self.tracking_thread.running:
-            self.stop_cam()
 
 
     def start_cam(self):
@@ -122,9 +120,7 @@ class Youme(QMainWindow):
         
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        time.sleep(1)
-        if self.tracking_thread.emergency_state == False:
-            self.bluetooth_thread.send_data('0')
+        self.bluetooth_thread.send_data('0')
 
 
     def handle_emergency(self, signal):
@@ -134,10 +130,8 @@ class Youme(QMainWindow):
         self.db.record_emergency(self.user)
 
         self.tracking_thread.stop()
+
         QTimer.singleShot(0, self.cam_label.clear)
-        print("e s")
-        time.sleep(1)
-        print("e f")
         self.start_btn.setVisible(False)
         self.stop_btn.setVisible(False)
         self.transfer_btn.setVisible(False)
