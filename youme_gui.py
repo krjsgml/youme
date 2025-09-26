@@ -146,22 +146,24 @@ class Youme(QMainWindow):
         self.bluetooth_thread.send_data('2')
         self.transfer_dialog = QDialog(self)
         self.transfer_dialog.setWindowTitle("Transfer Dialog")
-        self.transfer_dialog.setFixedSize(800,480)
+        self.transfer_dialog.setFixedSize(800, 480)
 
         transfer_layout = QHBoxLayout()
 
-        # step
+        # ================= STEP MOTOR =================
         step_layout = QVBoxLayout()
         step_label = QLabel("STEP MOTOR")
         step_label.setAlignment(Qt.AlignCenter)
         step_label.setMaximumHeight(30)
         step_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+
         btn_step_up = QPushButton("▲")
-        btn_step_up.setFixedSize(QSize(80, 80))  # ���簢��
+        btn_step_up.setFixedSize(QSize(80, 80))
         btn_step_stop = QPushButton("▆")
         btn_step_stop.setFixedSize(QSize(80, 80))
         btn_step_down = QPushButton("▼")
         btn_step_down.setFixedSize(QSize(80, 80))
+
         step_layout.addWidget(step_label)
         step_layout.addWidget(btn_step_up)
         step_layout.addWidget(btn_step_stop)
@@ -171,18 +173,20 @@ class Youme(QMainWindow):
         btn_step_stop.clicked.connect(lambda: self.bluetooth_thread.send_data('s'))
         btn_step_down.clicked.connect(lambda: self.bluetooth_thread.send_data('b'))
 
-        # step
+        # ================= LINEAR ACTUATOR =================
         linear_layout = QVBoxLayout()
         linear_label = QLabel("LINEAR ACTUATOR")
         linear_label.setAlignment(Qt.AlignCenter)
         linear_label.setMaximumHeight(30)
         linear_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+
         btn_linear_up = QPushButton("▲")
         btn_linear_up.setFixedSize(QSize(80, 80))
         btn_linear_stop = QPushButton("▆")
         btn_linear_stop.setFixedSize(QSize(80, 80))
         btn_linear_down = QPushButton("▼")
         btn_linear_down.setFixedSize(QSize(80, 80))
+
         linear_layout.addWidget(linear_label)
         linear_layout.addWidget(btn_linear_up)
         linear_layout.addWidget(btn_linear_stop)
@@ -192,35 +196,55 @@ class Youme(QMainWindow):
         btn_linear_stop.clicked.connect(lambda: self.bluetooth_thread.send_data('s'))
         btn_linear_down.clicked.connect(lambda: self.bluetooth_thread.send_data('d'))
 
-        # dc
+        # ================= DC MOTOR (Up / Down / Left / Right / Stop) =================
         dc_layout = QVBoxLayout()
         dc_label = QLabel("DC MOTOR")
         dc_label.setAlignment(Qt.AlignCenter)
         dc_label.setMaximumHeight(30)
         dc_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+
+        # GridLayout for arrow keys
+        dc_grid = QGridLayout()
+
         btn_dc_up = QPushButton("▲")
         btn_dc_up.setFixedSize(QSize(80, 80))
+
+        btn_dc_left = QPushButton("◀")
+        btn_dc_left.setFixedSize(QSize(80, 80))
+
         btn_dc_stop = QPushButton("▆")
         btn_dc_stop.setFixedSize(QSize(80, 80))
+
+        btn_dc_right = QPushButton("▶")
+        btn_dc_right.setFixedSize(QSize(80, 80))
+
         btn_dc_down = QPushButton("▼")
         btn_dc_down.setFixedSize(QSize(80, 80))
+
+        # Place buttons in a grid
+        dc_grid.addWidget(btn_dc_up,    0, 1)  # Up
+        dc_grid.addWidget(btn_dc_left,  1, 0)  # Left
+        dc_grid.addWidget(btn_dc_stop,  1, 1)  # Stop
+        dc_grid.addWidget(btn_dc_right, 1, 2)  # Right
+        dc_grid.addWidget(btn_dc_down,  2, 1)  # Down
+
         dc_layout.addWidget(dc_label)
-        dc_layout.addWidget(btn_dc_up)
-        dc_layout.addWidget(btn_dc_stop)
-        dc_layout.addWidget(btn_dc_down)
+        dc_layout.addLayout(dc_grid)
 
-        btn_dc_up.clicked.connect(lambda: self.bluetooth_thread.send_data('g'))
-        btn_dc_stop.clicked.connect(lambda: self.bluetooth_thread.send_data('s'))
-        btn_dc_down.clicked.connect(lambda: self.bluetooth_thread.send_data('r'))
+        # Signal connections
+        btn_dc_up.clicked.connect(lambda: self.bluetooth_thread.send_data('g'))  # 전진
+        btn_dc_stop.clicked.connect(lambda: self.bluetooth_thread.send_data('s')) # 정지
+        btn_dc_down.clicked.connect(lambda: self.bluetooth_thread.send_data('r')) # 후진
+        btn_dc_left.clicked.connect(lambda: self.bluetooth_thread.send_data('n')) # 좌회전
+        btn_dc_right.clicked.connect(lambda: self.bluetooth_thread.send_data('m')) # 우회전
 
-
-        # ���̾ƿ� ��ġ��
+        # ================= 전체 레이아웃 =================
         transfer_layout.addLayout(step_layout)
         transfer_layout.addLayout(linear_layout)
         transfer_layout.addLayout(dc_layout)
 
         close_btn = QPushButton("close")
-        close_btn.setFixedSize(50,30)
+        close_btn.setFixedSize(50, 30)
         transfer_layout.addWidget(close_btn)
         close_btn.clicked.connect(self.transfer_dialog.close)
         close_btn.clicked.connect(lambda: self.bluetooth_thread.send_data("0"))
