@@ -127,7 +127,7 @@ class Falldetect(QThread):
             if local_frame is not None:
                 rgb = cv2.cvtColor(local_frame, cv2.COLOR_BGR2RGB)
                 results = self.pose.process(rgb)
-                self.handle_fall_result(results)
+                self.handle_fall_result(results, self.frame)
             # 300ms 주기로 반응성/부하 균형 (원래 1000ms였으나 응답성 개선)
             self.msleep(300)
 
