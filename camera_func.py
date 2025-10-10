@@ -147,7 +147,7 @@ class Falldetect(QThread):
             vertical_diff = abs(self.left_shoulder.y - self.left_hip.y)
             if vertical_diff < 0.2:
                 self.emergency += 1
-                if self.emergency >= 5:
+                if self.emergency >= 10:
                     print("emergency detect")
                     cv2.putText(frame, "emergency situation!", (10, 90),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
