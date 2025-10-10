@@ -434,6 +434,12 @@ class Tracking(QThread):
         self.stop_track = 0
         self.emergency_state = False
 
+        try:
+            self.camera_thread.switch_camera(0)
+            self.camera_thread.current_index = 0
+        except Exception:
+            pass
+
         # stop fall detect if running
         try:
             if self.fall_detect_thread.isRunning():
