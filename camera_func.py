@@ -146,8 +146,6 @@ class Falldetect(QThread):
             self.left_hip = landmarks[mp.solutions.pose.PoseLandmark.LEFT_HIP]
             vertical_diff = abs(self.left_shoulder.y - self.left_hip.y)
             if vertical_diff < 0.2:
-                cv2.putText(frame, "emergency situation!", (10, 90),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                 self.emergency += 1
                 if self.emergency >= 10:
                     print("emergency detect")
@@ -317,6 +315,8 @@ class Tracking(QThread):
                 # ✅ 응급상황일 때는 오직 이 텍스트만 출력
                 self.camera_thread.switch_camera(1)
                 self.fall_detect_thread.update_frame(frame)
+                cv2.putText(frame, "emergency situation!", (10, 90),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
             else:
                 # ✅ 응급상황이 아닐 때만 나머지 텍스트 출력 허용
