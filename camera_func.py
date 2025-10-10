@@ -139,7 +139,7 @@ class Falldetect(QThread):
         with QMutexLocker(self._frame_mutex):
             self.frame = frame.copy()
 
-    def handle_fall_result(self, results):
+    def handle_fall_result(self, results, frame):
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
             self.left_shoulder = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER]
@@ -149,6 +149,8 @@ class Falldetect(QThread):
                 self.emergency += 1
                 if self.emergency >= 5:
                     print("emergency detect")
+                    cv2.putText(frame, "emergency situation!", (10, 90),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                     self.emergency_signal.emit(True)
                     self.emergency = 0
             else:
@@ -301,7 +303,7 @@ class Tracking(QThread):
             with QMutexLocker(self._frame_mutex):
                 if self.frame is not None:
                     local = self.frame.copy()
-        
+
             if local is None:
                 self.msleep(5)
                 continue
@@ -310,27 +312,24 @@ class Tracking(QThread):
             self.helmet_frame_count += 1
             if self.helmet_frame_count % 5 == 0:
                 self.helmet_detect_thread.update_frame(frame)
-        
+
             if self.emergency_state:
                 # ✅ 응급상황일 때는 오직 이 텍스트만 출력
                 self.camera_thread.switch_camera(1)
                 self.fall_detect_thread.update_frame(frame)
-        
-                cv2.putText(frame, "emergency situation!", (10, 90),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        
+
             else:
                 # ✅ 응급상황이 아닐 때만 나머지 텍스트 출력 허용
                 if self.helmet_detect_thread.helmet_detected:
                     self.stop_dc_motor_flag = False
                     self.stop_dc_no_helmet_Flag = False
-        
+
                     if not self.tracking:
                         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         self.detects = self.cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
                         for (x, y, w, h) in self.detects:
                             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        
+
                         cv2.putText(frame, "Click a box to track", (10, 30),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
                     else:
@@ -340,37 +339,37 @@ class Tracking(QThread):
                             self.tracker = create_mosse_tracker()
                             success = False
                             box = None
-        
+
                         if success and box is not None:
                             x, y, w, h = [int(v) for v in box]
                             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                             cv2.putText(frame, "Tracking...", (x, y - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        
+
                             face_center = x + w // 2
                             left_bound = frame.shape[1] // 3
                             right_bound = 2 * frame.shape[1] // 3
-        
+
                             if face_center < left_bound:
                                 pos = 'l'
                             elif face_center > right_bound:
                                 pos = 'r'
                             else:
                                 pos = 'c'
-        
+
                             if pos != self.prev_pos:
                                 self.bluetooth_thread.send_data(pos)
                                 self.prev_pos = pos
-        
+
                             self.stop_track = 0
                         else:
                             cv2.putText(frame, "Tracking failure", (10, 60),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        
+
                             if not self.stop_dc_motor_flag:
                                 self.bluetooth_thread.send_data('s')
                                 self.stop_dc_motor_flag = True
-        
+
                             self.stop_track += 1
                             if self.stop_track >= 50:
                                 if not self.fall_detect_thread.isRunning():
@@ -378,23 +377,23 @@ class Tracking(QThread):
                                 print("dc motor stop")
                                 self.emergency_state = True
                                 self.helmet_detect_thread.emergency_state = True
-        
+
                 else:
                     if not self.stop_dc_no_helmet_Flag:
                         self.bluetooth_thread.send_data('s')
                         self.stop_dc_no_helmet_Flag = True
-        
+
                     self.tracking = False
                     self.tracker = create_kcf_tracker()
                     self.detects = []
                     cv2.putText(frame, "Please wear a helmet.", (10, 60),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        
+
             now = time.time()
             if now - self._last_update_time >= (1.0 / self.max_update_fps):
                 self._last_update_time = now
                 self.handle_tracking_result(frame)
-        
+
             self.msleep(5)
 
         # 루프 종료 시 정리
