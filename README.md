@@ -6,7 +6,7 @@ YOUME는 **작업자의 움직임을 인식하고 추적하며 물류 작업을 
 
 ## ✅ 주요 기능
 - 객체 인식 및 추적 (OpenCV, Tracker)
-- 응급상황 감지
+- 응급상황 감지 (MediaPipe)
 - 헬멧 착용 여부 판별 (YOLOv8)
 - RFID 기반 사용자 인증
 - DB 저장 및 물품 위치 조회 (MySQL, LCD)
@@ -17,17 +17,17 @@ YOUME는 **작업자의 움직임을 인식하고 추적하며 물류 작업을 
 ## ✅ 기술 스택
 **Frontend:** Flutter  
 **Backend:** Flask (Python)  
-**Database:** MySQL  
+**Database:** MariaDB  
 **임베디드:** Raspberry Pi, Arduino  
-**Vision:** OpenCV, YOLOv8  
+**Vision:** OpenCV, YOLOv8, MediaPipe
 **통신:** Bluetooth, USART  
 **제어:** PID, 모터드라이버  
-**언어:** Python, Java, SQL, C
+**언어:** Python, SQL, C
 
 ## ✅ 개발 환경
 - Raspberry Pi OS, Windows
 - Thonny, Arduino IDE, VS Code, Android Studio
-- Python, C, Java, SQL
+- Python, C, SQL
 - GitHub, Google Sheets, KakaoTalk
 
 ## ✅ 기대효과
