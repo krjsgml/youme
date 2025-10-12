@@ -14,15 +14,6 @@ YOUME는 **작업자의 움직임을 인식하고 추적하며 물류 작업을 
 - 리니어 액추에이터 물품 적재 기능
 - Bluetooth / USART 통신
 
-## ✅ 시스템 구조
-```
-Flutter App ↔ Flask API ↔ MySQL DB
-          ↕
-      Raspberry Pi
-          ↕
-   Arduino · Sensors · Motors
-```
-
 ## ✅ 기술 스택
 **Frontend:** Flutter  
 **Backend:** Flask (Python)  
@@ -38,20 +29,6 @@ Flutter App ↔ Flask API ↔ MySQL DB
 - Thonny, Arduino IDE, VS Code, Android Studio
 - Python, C, Java, SQL
 - GitHub, Google Sheets, KakaoTalk
-
-## ✅ 팀원
-| 이름 | 역할 | 담당 |
-|------|------|------|
-| 홍길동 | 팀장 | 프로젝트 총괄 |
-| 김철수 | 개발 | OpenCV/객체추적 |
-| 이영희 | 앱/DB | Flutter/Flask/MySQL |
-| 박민수 | H/W | 회로·모터 제어 |
-
-## ✅ 시연 자료 (추가 예정)
-- 로봇 전체 모습
-- 헬멧 감지 화면
-- 물품 적재 장면
-- 앱 UI 스크린샷
 
 ## ✅ 기대효과
 - 작업자 안전 확보 및 산업재해 감소
