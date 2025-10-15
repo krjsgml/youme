@@ -82,8 +82,6 @@
 ---
 
 ## 3. 시스템 구성도
-(예시 형태, 이미지 삽입 예정)
-
 ### ✅ 서비스 구성도
 <img width="643" height="350" alt="Image" src="https://github.com/user-attachments/assets/653d9efc-6243-427b-80ba-805a93d21362" />
 
